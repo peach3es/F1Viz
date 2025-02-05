@@ -1,7 +1,7 @@
 import {
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
+  // ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 interface TyreChartProps {
-  data: any[];
+  data: Record<string, number | string>[];
   segmentColors: Record<string, string[]>;
   totalLaps: number;
 }
@@ -63,7 +63,7 @@ function TyreChart({ data, segmentColors, totalLaps }: TyreChartProps) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="flex w-full items-center justify-center"
+      className="flex h-[60rem] w-[100%] items-center justify-center"
     >
       <ResponsiveContainer width="200%" height="140%">
         <BarChart
@@ -96,7 +96,8 @@ function TyreChart({ data, segmentColors, totalLaps }: TyreChartProps) {
               dataKey={segKey}
               stackId="a"
               radius={5}
-              barSize={20}
+              barSize={32}
+              className="border border-slate-900"
             >
               {data.map((_, index) => (
                 <Cell

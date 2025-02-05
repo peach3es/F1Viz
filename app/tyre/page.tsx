@@ -69,21 +69,22 @@ const prepareRechartData = (
   drivers: number[],
   stints: Stint[],
   totalLaps: number
-) => {
+): {
+  data: Record<string, number | string>[];
+  segmentColors: Record<string, string[]>;
+} => {
   // Sort drivers for consistent ordering.
   const sortedDrivers = [...drivers].sort((a, b) => a - b);
   // Build a mapping of driver => segments.
   const driverSegments: Record<number, Segment[]> = {};
 
   sortedDrivers.forEach((driver) => {
-    // Get the stints for this driver, sorted by lap_start.
     const stintsForDriver = stints
       .filter((s) => s.driver_number === driver)
       .sort((a, b) => a.lap_start - b.lap_start);
 
     const segments: Segment[] = [];
 
-    // If the first stint doesn't start at lap 1, add a gap segment.
     if (stintsForDriver.length > 0 && stintsForDriver[0].lap_start > 1) {
       segments.push({
         value: stintsForDriver[0].lap_start - 1,
@@ -91,18 +92,16 @@ const prepareRechartData = (
       });
     }
 
-    // If no stints exist, fill the bar with a gap.
     if (stintsForDriver.length === 0) {
       segments.push({ value: totalLaps, color: "transparent" });
     } else {
-      // Add each stint as a segment.
       stintsForDriver.forEach((stint) => {
         segments.push({
           value: stint.lap_end - stint.lap_start,
           color: compoundColors[stint.compound] || "#888",
         });
       });
-      // If the last stint doesn't finish the race, add a trailing gap.
+
       const lastStint = stintsForDriver[stintsForDriver.length - 1];
       if (lastStint.lap_end < totalLaps) {
         segments.push({
@@ -111,25 +110,24 @@ const prepareRechartData = (
         });
       }
     }
+
     driverSegments[driver] = segments;
   });
 
-  // Determine the maximum number of segments across all drivers.
   const maxSegments = Math.max(
     ...sortedDrivers.map((driver) => driverSegments[driver].length)
   );
 
-  // Build the data array for Recharts.
   const data = sortedDrivers.map((driver) => {
     const segments = driverSegments[driver];
-    const obj: Record<string, any> = { driver: `#${driver}` };
+    const obj: Record<string, number | string> = { driver: `#${driver}` };
+
     for (let i = 0; i < maxSegments; i++) {
       obj[`seg${i}`] = segments[i]?.value || 0;
     }
     return obj;
   });
 
-  // Prepare a mapping from segment key (e.g. "seg0") to an array of colors.
   const segmentColors: Record<string, string[]> = {};
   for (let i = 0; i < maxSegments; i++) {
     const key = `seg${i}`;
@@ -195,7 +193,7 @@ export default function Tyre() {
   return (
     <Container className="min-h-screen py-16">
       <Card className="mt-10 w-full p-4 shadow-lg">
-        <CardContent>
+        <CardContent className="w-full">
           <h2 className="mb-4 text-center text-xl font-bold">
             F1 Tire Stint Visualization - 2024 Season
           </h2>
@@ -217,8 +215,8 @@ export default function Tyre() {
             />
           ) : (
             <p className="text-center">
-              Enter a valid Grand Prix name and click "Fetch Data" to see the
-              chart.
+              Enter a valid Grand Prix name and click &quot;Fetch Data&quot; to
+              see the chart.
             </p>
           )}
         </CardContent>
