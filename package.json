@@ -16,7 +16,7 @@
     "@visx/group": "^3.12.0",
     "@visx/scale": "^3.12.0",
     "@visx/shape": "^3.12.0",
-    "axios": "^1.7.9",
+    "axios": "^1.13.5",
     "class-variance-authority": "^0.7.1",
     "d3": "^7.9.0",
     "dotted-map": "^2.2.3",
