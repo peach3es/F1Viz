@@ -12,7 +12,7 @@ export async function getDrivers(
     throw new Error("F1API_URL is not defined");
   }
 
-  teamName = teamName.replace(/ /g, "%20");
+  teamName = encodeURIComponent(teamName);
 
   const endpointURL = `${f1API}drivers?session_key=9472&team_name=${teamName}`;
   const res = await fetch(endpointURL);
@@ -23,6 +23,30 @@ export async function getDrivers(
 
   const apiResponse = await res.json();
   return apiResponse || [];
+}
+
+export async function getDriverByNumber(
+  driverNumber: number,
+  session_key: number = 9472
+): Promise<Driver | null> {
+  if (!f1API) {
+    throw new Error("F1API_URL is not defined");
+  }
+
+  const endpointURL = `${f1API}drivers?session_key=${session_key}&driver_number=${driverNumber}`;
+  const res = await fetch(endpointURL);
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch driver");
+  }
+
+  const apiResponse = await res.json();
+
+  if (!Array.isArray(apiResponse) || apiResponse.length === 0) {
+    return null;
+  }
+
+  return apiResponse[0];
 }
 
 export async function getTeams(session_key: number = 9472): Promise<string[]> {

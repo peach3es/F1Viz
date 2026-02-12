@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Driver } from "@/types/driver";
 import Image from "next/image";
+import Link from "next/link";
 
 type DriverCardProps = {
   driver: Driver;
@@ -68,40 +69,48 @@ export default function DriverCard({ driver }: DriverCardProps) {
             </div>
             {driver.full_name}
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-8">
-            <Image
-              src={driverImg}
-              alt={driver.last_name}
-              width={1080}
-              height={1080}
-              className="max-w-36 object-cover"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p>Broadcast Name</p>
-                <div className="text-darkRed indent-2 text-lg">
-                  {driver.broadcast_name}
+          <DialogDescription className="space-y-4">
+            <div className="flex items-center gap-8">
+              <Image
+                src={driverImg}
+                alt={driver.last_name}
+                width={1080}
+                height={1080}
+                className="max-w-36 object-cover"
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p>Broadcast Name</p>
+                  <div className="text-darkRed indent-2 text-lg">
+                    {driver.broadcast_name}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p>Country Code</p>
-                <div className="text-darkRed indent-2 text-lg">
-                  {driver.country_code}
+                <div>
+                  <p>Country Code</p>
+                  <div className="text-darkRed indent-2 text-lg">
+                    {driver.country_code}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p>Team</p>
-                <div className="text-darkRed indent-2 text-lg">
-                  {driver.team_name}
+                <div>
+                  <p>Team</p>
+                  <div className="text-darkRed indent-2 text-lg">
+                    {driver.team_name}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="">Driver Number</p>
-                <div className="text-darkRed indent-2 text-2xl font-bold">
-                  {driver.driver_number}
+                <div>
+                  <p className="">Driver Number</p>
+                  <div className="text-darkRed indent-2 text-2xl font-bold">
+                    {driver.driver_number}
+                  </div>
                 </div>
               </div>
             </div>
+            <Link
+              href={`/racers/${driver.driver_number}`}
+              className="text-darkRed inline-block hover:underline"
+            >
+              Open full driver page
+            </Link>
           </DialogDescription>
         </DialogHeader>
         <DialogClose />
