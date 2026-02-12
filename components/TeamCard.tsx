@@ -19,9 +19,9 @@ export default async function TeamCard({ teamName }: TeamCardProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-darkRed p-3">
+    <div className="border-darkRed flex flex-col items-center justify-center gap-1 rounded-lg border-2 p-3">
       <div className="text-2xl font-semibold">{teamName}</div>
-      <div className="flex w-full flex-row justify-between gap-2 border-t border-burgundy pt-2">
+      <div className="border-burgundy flex w-full flex-row justify-between gap-2 border-t pt-2">
         {drivers.length ? (
           drivers.map((driver) => (
             <div

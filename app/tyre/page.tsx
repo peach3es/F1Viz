@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Container } from "@/components/Container";
+import TyreChart from "@/components/Tyre";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Group } from "@visx/group";
-import { scaleLinear } from "@visx/scale";
-import { Bar } from "@visx/shape";
 
+// Data types for stints.
 interface Stint {
   driver_number: number;
   lap_start: number;
@@ -17,6 +16,7 @@ interface Stint {
   compound: string;
 }
 
+// Define tire compound colors.
 const compoundColors: Record<string, string> = {
   SOFT: "#ff2d55",
   MEDIUM: "#ffcc00",
@@ -25,6 +25,7 @@ const compoundColors: Record<string, string> = {
   WET: "#0091ea",
 };
 
+// Map Grand Prix names to session keys.
 const grandPrixMap: Record<string, number> = {
   Bahrain: 9472,
   "Saudi Arabia": 9480,
@@ -52,33 +53,105 @@ const grandPrixMap: Record<string, number> = {
   "Abu Dhabi": 9662,
 };
 
+interface Segment {
+  // Number of laps for this segment.
+  value: number;
+  // Color for the segment (or "transparent" for gaps).
+  color: string;
+}
+
+/**
+ * Converts raw stint data into a format that Recharts can work with.
+ * Each driver becomes an object with a "driver" key and keys "seg0", "seg1", etc.
+ * We also prepare a mapping of segment keys to an array of colors (one per driver).
+ */
+const prepareRechartData = (
+  drivers: number[],
+  stints: Stint[],
+  totalLaps: number
+): {
+  data: Record<string, number | string>[];
+  segmentColors: Record<string, string[]>;
+} => {
+  // Sort drivers for consistent ordering.
+  const sortedDrivers = [...drivers].sort((a, b) => a - b);
+  // Build a mapping of driver => segments.
+  const driverSegments: Record<number, Segment[]> = {};
+
+  sortedDrivers.forEach((driver) => {
+    const stintsForDriver = stints
+      .filter((s) => s.driver_number === driver)
+      .sort((a, b) => a.lap_start - b.lap_start);
+
+    const segments: Segment[] = [];
+
+    if (stintsForDriver.length > 0 && stintsForDriver[0].lap_start > 1) {
+      segments.push({
+        value: stintsForDriver[0].lap_start - 1,
+        color: "transparent",
+      });
+    }
+
+    if (stintsForDriver.length === 0) {
+      segments.push({ value: totalLaps, color: "transparent" });
+    } else {
+      stintsForDriver.forEach((stint) => {
+        segments.push({
+          value: stint.lap_end - stint.lap_start,
+          color: compoundColors[stint.compound] || "#888",
+        });
+      });
+
+      const lastStint = stintsForDriver[stintsForDriver.length - 1];
+      if (lastStint.lap_end < totalLaps) {
+        segments.push({
+          value: totalLaps - lastStint.lap_end,
+          color: "transparent",
+        });
+      }
+    }
+
+    driverSegments[driver] = segments;
+  });
+
+  const maxSegments = Math.max(
+    ...sortedDrivers.map((driver) => driverSegments[driver].length)
+  );
+
+  const data = sortedDrivers.map((driver) => {
+    const segments = driverSegments[driver];
+    const obj: Record<string, number | string> = { driver: `#${driver}` };
+
+    for (let i = 0; i < maxSegments; i++) {
+      obj[`seg${i}`] = segments[i]?.value || 0;
+    }
+    return obj;
+  });
+
+  const segmentColors: Record<string, string[]> = {};
+  for (let i = 0; i < maxSegments; i++) {
+    const key = `seg${i}`;
+    segmentColors[key] = sortedDrivers.map(
+      (driver) => driverSegments[driver][i]?.color || "transparent"
+    );
+  }
+
+  return { data, segmentColors };
+};
+
 export default function Tyre() {
   const [grandPrix, setGrandPrix] = useState("");
   const [stints, setStints] = useState<Stint[]>([]);
   const [drivers, setDrivers] = useState<number[]>([]);
   const [totalLaps, setTotalLaps] = useState<number>(0);
   const [isClient, setIsClient] = useState(false);
-  const [chartWidth, setChartWidth] = useState(600);
-
-  const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     setIsClient(true);
-
-    const updateSize = () => {
-      if (svgRef.current) {
-        setChartWidth(svgRef.current.clientWidth);
-      }
-    };
-
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
   }, []);
 
   const fetchStints = async () => {
     if (!grandPrix) return;
-
     const lowerCaseGrandPrix = grandPrix.trim().toLowerCase();
     const sessionKey =
       grandPrixMap[
@@ -104,22 +177,16 @@ export default function Tyre() {
     setDrivers(uniqueDrivers);
 
     const calculatedTotalLaps = Math.max(
-      ...data.map((stint: Stint) => stint.lap_end)
+      ...data.map((stint: Stint) => stint.lap_end),
+      0
     );
     setTotalLaps(calculatedTotalLaps);
   };
 
-  const xScale = scaleLinear({
-    domain: [1, totalLaps || 1],
-    range: [0, chartWidth - 50], // Adjust dynamically
-  });
-
-  const tickCount = Math.min(totalLaps, 10);
-  const tickStep = totalLaps > 0 ? Math.ceil(totalLaps / tickCount) : 1;
-  const ticks =
+  const { data, segmentColors } =
     totalLaps > 0
-      ? Array.from({ length: tickCount + 1 }, (_, i) => i * tickStep + 1)
-      : [];
+      ? prepareRechartData(drivers, stints, totalLaps)
+      : { data: [], segmentColors: {} };
 
   if (!isClient) return null;
 
@@ -130,7 +197,6 @@ export default function Tyre() {
           <h2 className="mb-4 text-center text-xl font-bold">
             F1 Tire Stint Visualization - 2024 Season
           </h2>
-
           <div className="mb-4 flex flex-col gap-2 sm:flex-row">
             <Input
               type="text"
@@ -141,68 +207,18 @@ export default function Tyre() {
             />
             <Button onClick={fetchStints}>Fetch Data</Button>
           </div>
-
-          <svg ref={svgRef} width="100%" height={drivers.length * 40 + 100}>
-            {drivers.map((driver, rowIndex) => (
-              <Group key={driver} top={rowIndex * 40 + 70}>
-                {stints
-                  .filter((stint) => stint.driver_number === driver)
-                  .map((stint, index) => (
-                    <Bar
-                      key={index}
-                      x={xScale(stint.lap_start)}
-                      y={10}
-                      width={xScale(stint.lap_end) - xScale(stint.lap_start)}
-                      height={30}
-                      fill={compoundColors[stint.compound] || "#888"}
-                      stroke="#000"
-                    />
-                  ))}
-                <text
-                  x={5}
-                  y={30}
-                  fontSize={12}
-                  fill="black"
-                >{`#${driver}`}</text>
-              </Group>
-            ))}
-
-            <g transform={`translate(0, ${drivers.length * 40 + 80})`}>
-              <line x1={0} x2={chartWidth - 50} y1={0} y2={0} stroke="#000" />
-              {ticks.map((tick) => (
-                <g key={tick} transform={`translate(${xScale(tick)}, 0)`}>
-                  <line y1={0} y2={5} stroke="#000" />
-                  <text
-                    x={0}
-                    y={20}
-                    fontSize={12}
-                    fill="black"
-                    textAnchor="middle"
-                  >
-                    {tick}
-                  </text>
-                </g>
-              ))}
-            </g>
-          </svg>
-
-          <div className="mt-4 flex flex-col items-start">
-            <h3 className="mb-2 font-bold">Tire Compound Legend:</h3>
-            {Object.entries(compoundColors).map(([compound, color]) => (
-              <div key={compound} className="mb-1 flex items-center">
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: color,
-                    marginRight: 8,
-                    border: "1px solid black",
-                  }}
-                />
-                <span>{compound}</span>
-              </div>
-            ))}
-          </div>
+          {data.length > 0 ? (
+            <TyreChart
+              data={data}
+              segmentColors={segmentColors}
+              totalLaps={totalLaps}
+            />
+          ) : (
+            <p className="text-center">
+              Enter a valid Grand Prix name and click &quot;Fetch Data&quot; to
+              see the chart.
+            </p>
+          )}
         </CardContent>
       </Card>
     </Container>
