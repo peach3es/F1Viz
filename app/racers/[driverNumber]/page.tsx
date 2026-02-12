@@ -5,13 +5,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 type DriverPageProps = {
-  params: {
+  params: Promise<{
     driverNumber: string;
-  };
+  }>;
 };
 
 export default async function DriverPage({ params }: DriverPageProps) {
-  const driverNumber = Number(params.driverNumber);
+  const { driverNumber: driverNumberParam } = await params;
+  const driverNumber = Number(driverNumberParam);
 
   if (!Number.isInteger(driverNumber) || driverNumber <= 0) {
     notFound();

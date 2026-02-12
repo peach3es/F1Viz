@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 
 type RacerDriverRedirectProps = {
-  params: {
+  params: Promise<{
     driverNumber: string;
-  };
+  }>;
 };
 
-export default function RacerDriverRedirect({
+export default async function RacerDriverRedirect({
   params,
 }: RacerDriverRedirectProps) {
-  redirect(`/racers/${params.driverNumber}`);
+  const { driverNumber } = await params;
+  redirect(`/racers/${driverNumber}`);
 }
