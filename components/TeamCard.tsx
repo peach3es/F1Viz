@@ -1,6 +1,5 @@
 import { getDrivers } from "@/actions";
 import { Driver } from "@/types/driver";
-import { notFound } from "next/navigation";
 
 import DriverCard from "./DriverCard";
 
@@ -9,13 +8,12 @@ type TeamCardProps = {
 };
 
 export default async function TeamCard({ teamName }: TeamCardProps) {
-  let drivers: Driver[];
+  let drivers: Driver[] = [];
 
   try {
     drivers = await getDrivers(teamName);
   } catch (error) {
     console.error("Error fetching drivers:", error);
-    notFound();
   }
 
   return (

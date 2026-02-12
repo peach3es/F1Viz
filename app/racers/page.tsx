@@ -1,16 +1,14 @@
 import { getTeams } from "@/actions";
 import { Container } from "@/components/Container";
 import TeamCard from "@/components/TeamCard";
-import { notFound } from "next/navigation";
 
 export default async function Racers() {
-  let teams: string[];
+  let teams: string[] = [];
 
   try {
     teams = await getTeams();
   } catch (error) {
-    console.error("Error fetching drivers:", error);
-    notFound();
+    console.error("Error fetching teams:", error);
   }
 
   return (
